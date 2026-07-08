@@ -60,11 +60,49 @@ export default function EligibilityForm() {
     return () => window.clearInterval(polling);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Wire this up to your lead API / CRM endpoint
-    console.log("Form submitted");
+ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const formData = new FormData(form);
+
+  const payload = {
+    firstName: formData.get("firstName"),
+    lastName: formData.get("lastName"),
+    phone: formData.get("phone"),
+    email: formData.get("email"),
+    zip: formData.get("zip"),
+    dob: formData.get("dob"),
+    hasInsurance: hasInsurance,
+    preferredTime: formData.get("preferredTime"),
+    // These three aren't collected by the UI yet — leave blank
+    // unless/until Jornaya (LeadiD) + TrustedForm scripts are added
+    address: "",
+    city: "",
+    state: "",
+    jornayaId: "",
+    trustedFormUrl: "",
   };
+
+  try {
+    const res = await fetch("/api/submit-lead", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await res.json();
+
+    if (result.success) {
+      alert("Thank you! We'll be in touch shortly.");
+      form.reset();
+    } else {
+      alert("Something went wrong. Please try again or call us directly.");
+    }
+  } catch (err) {
+    console.error("Submission error:", err);
+    alert("Something went wrong. Please try again or call us directly.");
+  }
+};
 
   return (
     <div className="bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100">
