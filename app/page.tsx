@@ -14,6 +14,7 @@ export default function Home() {
       <WhyConsider />
       <HowItWorks />
       <Faq />
+      
       <TrustDisclaimer />
       <Footer />
     </main>

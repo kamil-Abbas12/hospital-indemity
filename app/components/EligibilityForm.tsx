@@ -1,10 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { User, Phone, Mail, MapPin, Calendar, Clock, Lock } from "lucide-react";
 
 export default function EligibilityForm() {
   const [hasInsurance, setHasInsurance] = useState<"yes" | "no" | null>(null);
+
+  useEffect(() => {
+    const updateFields = () => {
+      const leadidToken = document.querySelector<HTMLInputElement>("#leadid_token, input[name='universal_leadid']");
+      const hidLeadid = document.getElementById("Hidleadid") as HTMLInputElement | null;
+      const hidTrusted = document.getElementById("hidTrusted") as HTMLInputElement | null;
+      const trustedToken = document.querySelector<HTMLInputElement>(
+        "#xxTrustedFormToken_0, #xxTrustedFormCertUrl, input[name='xxTrustedFormToken_0'], input[name='xxTrustedFormCertUrl']"
+      );
+
+      if (leadidToken && hidLeadid && leadidToken.value) {
+        hidLeadid.value = leadidToken.value;
+      }
+      if (trustedToken && hidTrusted && trustedToken.value) {
+        hidTrusted.value = trustedToken.value;
+      }
+    };
+
+    const polling = window.setInterval(updateFields, 5000);
+    updateFields();
+
+    const trustedFormField = "xxTrustedFormCertUrl";
+    const provideReferrer = false;
+    const trustedScript = document.createElement("script");
+    trustedScript.type = "text/javascript";
+    trustedScript.async = true;
+    trustedScript.src =
+      "http" +
+      (document.location.protocol === "https:" ? "s" : "") +
+      "://api.trustedform.com/trustedform.js?provide_referrer=" +
+      encodeURIComponent(String(provideReferrer)) +
+      "&field=" +
+      encodeURIComponent(trustedFormField) +
+      "&l=" +
+      new Date().getTime() +
+      Math.random();
+    document.head.appendChild(trustedScript);
+
+    const leadidScript = document.createElement("script");
+    leadidScript.id = "LeadiDscript_campaign";
+    leadidScript.type = "text/javascript";
+    leadidScript.async = true;
+    leadidScript.src =
+      "//create.lidstatic.com/campaign/372b9fce-b1fd-68e6-0d81-5286de90f4f0.js?snippet_version=2";
+
+    const placeholder = document.getElementById("LeadiDscript");
+    if (placeholder?.parentNode) {
+      placeholder.parentNode.insertBefore(leadidScript, placeholder);
+    } else {
+      document.body.appendChild(leadidScript);
+    }
+
+    return () => window.clearInterval(polling);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +81,11 @@ export default function EligibilityForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-3">
+        <input id="leadid_token" name="universal_leadid" type="hidden" value="" />
+        <input id="Hidleadid" name="Hidleadid" type="hidden" value="" />
+        <input id="hidTrusted" name="hidTrusted" type="hidden" value="" />
+        <input id="xxTrustedFormToken_0" name="xxTrustedFormToken_0" type="hidden" value="" />
+
         <div className="grid grid-cols-2 gap-3">
           <InputField icon={<User className="w-4 h-4" />} placeholder="First Name*" required />
           <InputField icon={<User className="w-4 h-4" />} placeholder="Last Name*" required />
@@ -75,6 +134,7 @@ export default function EligibilityForm() {
         </div>
 
         <button
+          id="btnSubmit"
           type="submit"
           className="w-full bg-gold hover:bg-gold-light transition-colors text-navy font-bold py-3 rounded-lg flex items-center justify-center gap-2"
         >
@@ -85,6 +145,7 @@ export default function EligibilityForm() {
           <Lock className="w-3.5 h-3.5" /> Your information is safe and secure.
         </p>
       </form>
+      <div id="LeadiDscript" />
     </div>
   );
 }
