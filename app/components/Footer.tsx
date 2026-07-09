@@ -48,9 +48,6 @@ export default function Footer() {
             benefits directly to you.
           </p>
           <div className="space-y-2 text-sm">
-            <a href="tel:+18005551234" className="flex items-center gap-2 hover:text-white transition-colors">
-              <Phone className="w-4 h-4 text-gold" /> (800) 555-1234
-            </a>
             <a href="mailto:support@yourdomain.com" className="flex items-center gap-2 hover:text-white transition-colors">
               <Mail className="w-4 h-4 text-gold" /> support@yourdomain.com
             </a>

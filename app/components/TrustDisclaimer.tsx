@@ -40,7 +40,6 @@ export default function TrustDisclaimer() {
           <div className="flex items-center gap-2 shrink-0">
             <ShieldCheck className="w-6 h-6 text-gold" />
             <div className="leading-tight">
-              <p className="font-bold text-white text-sm">100% FREE</p>
               <p className="text-xs">NO OBLIGATION</p>
             </div>
           </div>
