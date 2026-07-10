@@ -37,12 +37,6 @@ export default function TrustDisclaimer() {
             offered by licensed insurance agents. Availability and benefits
             vary by carrier and state.
           </p>
-          <div className="flex items-center gap-2 shrink-0">
-            <ShieldCheck className="w-6 h-6 text-gold" />
-            <div className="leading-tight">
-              <p className="text-xs">NO OBLIGATION</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

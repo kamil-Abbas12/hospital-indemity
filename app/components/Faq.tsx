@@ -16,10 +16,8 @@ const faqs = [
     q: "How much does hospital indemnity insurance cost?",
     a: "Hospital indemnity insurance plans are typically priced to be affordable supplements to existing coverage, with monthly premiums that vary based on age, state, and benefit level. Get a free, personalized quote to see exact pricing.",
   },
-  {
-    q: "Is there any obligation to purchase after requesting a quote?",
-    a: "No. Requesting information and speaking with a licensed specialist is 100% free, and you're under no obligation to purchase a hospital indemnity plan.",
-  },
+  
+
 ];
 
 const faqSchema = {
