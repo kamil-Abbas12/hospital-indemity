@@ -3,34 +3,44 @@
 import { useEffect, useState } from "react";
 import { User, Phone, Mail, MapPin, Home, Building2, Calendar, Clock, Lock } from "lucide-react";
 
+// Strips non-digit characters and caps length — used for Phone and Zip
+function sanitizeDigits(e: React.FormEvent<HTMLInputElement>, maxLen: number) {
+  const target = e.target as HTMLInputElement;
+  target.value = target.value.replace(/\D/g, "").slice(0, maxLen);
+}
+
+// Forces uppercase letters only, capped at 2 characters — used for State
+function sanitizeState(e: React.FormEvent<HTMLInputElement>) {
+  const target = e.target as HTMLInputElement;
+  target.value = target.value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 2);
+}
+
 export default function EligibilityForm() {
   const [hasInsurance, setHasInsurance] = useState<"yes" | "no" | null>(null);
   const [insuranceError, setInsuranceError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
-   const updateFields = () => {
-  const leadidToken = document.querySelector<HTMLInputElement>(
-    "#leadid_token, input[name='universal_leadid']"
-  );
-  const hidLeadid = document.getElementById("Hidleadid") as HTMLInputElement | null;
-  const hidTrusted = document.getElementById("hidTrusted") as HTMLInputElement | null;
+    const updateFields = () => {
+      const leadidToken = document.querySelector<HTMLInputElement>("#leadid_token, input[name='universal_leadid']");
+      const hidLeadid = document.getElementById("Hidleadid") as HTMLInputElement | null;
+      const hidTrusted = document.getElementById("hidTrusted") as HTMLInputElement | null;
 
-  // TrustedForm actually creates a hidden input named "xxTrustedFormCertUrl_0"
-  // (with a numeric suffix) — the previous selector list didn't include this
-  // exact pattern, so it always returned null. Using a wildcard attribute
-  // selector here so it matches regardless of the suffix number.
-  const trustedToken = document.querySelector<HTMLInputElement>(
-    "input[name^='xxTrustedFormCertUrl'], input[id^='xxTrustedFormCertUrl']"
-  );
+      // TrustedForm creates a hidden input named "xxTrustedFormCertUrl_0"
+      // (with a numeric suffix) — using a "starts with" selector so it
+      // matches regardless of the suffix TrustedForm assigns.
+      const trustedToken = document.querySelector<HTMLInputElement>(
+        "input[name^='xxTrustedFormCertUrl'], input[id^='xxTrustedFormCertUrl']"
+      );
 
-  if (leadidToken && hidLeadid && leadidToken.value) {
-    hidLeadid.value = leadidToken.value;
-  }
-  if (trustedToken && hidTrusted && trustedToken.value) {
-    hidTrusted.value = trustedToken.value;
-  }
-};
+      if (leadidToken && hidLeadid && leadidToken.value) {
+        hidLeadid.value = leadidToken.value;
+      }
+      if (trustedToken && hidTrusted && trustedToken.value) {
+        hidTrusted.value = trustedToken.value;
+      }
+    };
 
     const polling = window.setInterval(updateFields, 5000);
     updateFields();
@@ -71,35 +81,50 @@ export default function EligibilityForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSubmitting) return; // guard against rapid double-clicks
+    if (isSubmitting) return;
 
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    // hasInsurance is a custom button toggle, not a native input,
-    // so HTML's `required` can't validate it — check manually.
     if (!hasInsurance) {
       setInsuranceError(true);
       return;
     }
     setInsuranceError(false);
+
+    // Backstop validation — even though inputs sanitize as you type,
+    // this catches anything pasted in or submitted via autofill.
+    const phone = String(formData.get("phone") ?? "");
+    const zip = String(formData.get("zip") ?? "");
+    const state = String(formData.get("state") ?? "");
+
+    if (!/^\d{10}$/.test(phone)) {
+      setFormError("Phone number must be exactly 10 digits.");
+      return;
+    }
+    if (!/^\d{5}$/.test(zip)) {
+      setFormError("ZIP code must be exactly 5 digits.");
+      return;
+    }
+    if (!/^[A-Z]{2}$/.test(state)) {
+      setFormError("State must be a 2-letter abbreviation (e.g. NY, CA).");
+      return;
+    }
+    setFormError("");
     setIsSubmitting(true);
 
-    // Jornaya (LeadiD) and TrustedForm tokens are captured into these
-    // hidden fields by the polling effect above — read their live values
-    // at submit time instead of hardcoding blanks.
     const hidLeadid = form.querySelector<HTMLInputElement>("#Hidleadid");
     const hidTrusted = form.querySelector<HTMLInputElement>("#hidTrusted");
 
     const payload = {
       firstName: formData.get("firstName"),
       lastName: formData.get("lastName"),
-      phone: formData.get("phone"),
+      phone,
       email: formData.get("email"),
       address: formData.get("address"),
       city: formData.get("city"),
-      state: formData.get("state"),
-      zip: formData.get("zip"),
+      state,
+      zip,
       dob: formData.get("dob"),
       hasInsurance: hasInsurance,
       preferredTime: formData.get("preferredTime"),
@@ -145,7 +170,7 @@ export default function EligibilityForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="p-6 space-y-3">
+      <form onSubmit={handleSubmit} className="p-6 space-y-3" noValidate>
         <input id="leadid_token" name="universal_leadid" type="hidden" value="" />
         <input id="Hidleadid" name="Hidleadid" type="hidden" value="" />
         <input id="hidTrusted" name="hidTrusted" type="hidden" value="" />
@@ -156,17 +181,43 @@ export default function EligibilityForm() {
           <InputField icon={<User className="w-4 h-4" />} name="lastName" placeholder="Last Name*" required />
         </div>
 
-        <InputField icon={<Phone className="w-4 h-4" />} name="phone" placeholder="Phone Number*" type="tel" required />
-        <InputField icon={<Mail className="w-4 h-4" />} name="email" placeholder="Email Address*" type="email" required />
+        <InputField
+          icon={<Phone className="w-4 h-4" />}
+          name="phone"
+          placeholder="Phone Number* (10 digits)"
+          type="tel"
+          inputMode="numeric"
+          maxLength={10}
+          onInput={(e) => sanitizeDigits(e, 10)}
+          required
+        />
+
+        <InputField icon={<Mail className="w-4 h-4" />} name="email" placeholder="Email Address*" type="email"  />
 
         <InputField icon={<Home className="w-4 h-4" />} name="address" placeholder="Street Address*" required />
 
         <div className="grid grid-cols-2 gap-3">
           <InputField icon={<Building2 className="w-4 h-4" />} name="city" placeholder="City*" required />
-          <InputField icon={<MapPin className="w-4 h-4" />} name="state" placeholder="State*" required />
+          <InputField
+            icon={<MapPin className="w-4 h-4" />}
+            name="state"
+            placeholder="State* (e.g. NY)"
+            maxLength={2}
+            onInput={sanitizeState}
+            required
+          />
         </div>
 
-        <InputField icon={<MapPin className="w-4 h-4" />} name="zip" placeholder="ZIP Code*" required />
+        <InputField
+          icon={<MapPin className="w-4 h-4" />}
+          name="zip"
+          placeholder="ZIP Code* (5 digits)"
+          inputMode="numeric"
+          maxLength={5}
+          onInput={(e) => sanitizeDigits(e, 5)}
+          required
+        />
+
         <InputField
           icon={<Calendar className="w-4 h-4" />}
           name="dob"
@@ -227,6 +278,10 @@ export default function EligibilityForm() {
           </select>
         </div>
 
+        {formError && (
+          <p className="text-red-600 text-xs -mt-1">{formError}</p>
+        )}
+
         <button
           id="btnSubmit"
           type="submit"
@@ -257,14 +312,20 @@ function InputField({
   placeholder,
   type = "text",
   required = false,
+  maxLength,
+  inputMode,
   onFocus,
+  onInput,
 }: {
   icon: React.ReactNode;
   name: string;
   placeholder: string;
   type?: string;
   required?: boolean;
+  maxLength?: number;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onInput?: (e: React.FormEvent<HTMLInputElement>) => void;
 }) {
   return (
     <div className="relative">
@@ -276,7 +337,10 @@ function InputField({
         type={type}
         required={required}
         placeholder={placeholder}
+        maxLength={maxLength}
+        inputMode={inputMode}
         onFocus={onFocus}
+        onInput={onInput}
         className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal/40"
       />
     </div>
