@@ -171,10 +171,10 @@ export default function EligibilityForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="p-6 space-y-3" noValidate>
-        <input id="leadid_token" name="universal_leadid" type="hidden" value="" />
-        <input id="Hidleadid" name="Hidleadid" type="hidden" value="" />
-        <input id="hidTrusted" name="hidTrusted" type="hidden" value="" />
-        <input id="xxTrustedFormToken_0" name="xxTrustedFormToken_0" type="hidden" value="" />
+        <input id="leadid_token" name="universal_leadid" type="hidden" defaultValue="" />
+<input id="Hidleadid" name="Hidleadid" type="hidden" defaultValue="" />
+<input id="hidTrusted" name="hidTrusted" type="hidden" defaultValue="" />
+<input id="xxTrustedFormToken_0" name="xxTrustedFormToken_0" type="hidden" defaultValue="" />
 
         <div className="grid grid-cols-2 gap-3">
           <InputField icon={<User className="w-4 h-4" />} name="firstName" placeholder="First Name*" required />
