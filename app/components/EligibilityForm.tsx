@@ -15,6 +15,27 @@ function sanitizeState(e: React.FormEvent<HTMLInputElement>) {
   target.value = target.value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 2);
 }
 
+// Pulled out of useEffect so handleSubmit can call it directly too —
+// this guarantees the freshest possible token capture at submit time,
+// instead of depending on the last 5-second poll having caught it.
+function captureTrackingTokens() {
+  const leadidToken = document.querySelector<HTMLInputElement>(
+    "#leadid_token, input[name='universal_leadid']"
+  );
+  const hidLeadid = document.getElementById("Hidleadid") as HTMLInputElement | null;
+  const hidTrusted = document.getElementById("hidTrusted") as HTMLInputElement | null;
+  const trustedToken = document.querySelector<HTMLInputElement>(
+    "input[name^='xxTrustedFormCertUrl'], input[id^='xxTrustedFormCertUrl']"
+  );
+
+  if (leadidToken && hidLeadid && leadidToken.value) {
+    hidLeadid.value = leadidToken.value;
+  }
+  if (trustedToken && hidTrusted && trustedToken.value) {
+    hidTrusted.value = trustedToken.value;
+  }
+}
+
 export default function EligibilityForm() {
   const [hasInsurance, setHasInsurance] = useState<"yes" | "no" | null>(null);
   const [insuranceError, setInsuranceError] = useState(false);
@@ -22,28 +43,8 @@ export default function EligibilityForm() {
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
-    const updateFields = () => {
-      const leadidToken = document.querySelector<HTMLInputElement>("#leadid_token, input[name='universal_leadid']");
-      const hidLeadid = document.getElementById("Hidleadid") as HTMLInputElement | null;
-      const hidTrusted = document.getElementById("hidTrusted") as HTMLInputElement | null;
-
-      // TrustedForm creates a hidden input named "xxTrustedFormCertUrl_0"
-      // (with a numeric suffix) — using a "starts with" selector so it
-      // matches regardless of the suffix TrustedForm assigns.
-      const trustedToken = document.querySelector<HTMLInputElement>(
-        "input[name^='xxTrustedFormCertUrl'], input[id^='xxTrustedFormCertUrl']"
-      );
-
-      if (leadidToken && hidLeadid && leadidToken.value) {
-        hidLeadid.value = leadidToken.value;
-      }
-      if (trustedToken && hidTrusted && trustedToken.value) {
-        hidTrusted.value = trustedToken.value;
-      }
-    };
-
-    const polling = window.setInterval(updateFields, 5000);
-    updateFields();
+    const polling = window.setInterval(captureTrackingTokens, 2000); // tightened from 5000ms
+    captureTrackingTokens();
 
     const trustedFormField = "xxTrustedFormCertUrl";
     const provideReferrer = false;
@@ -83,6 +84,10 @@ export default function EligibilityForm() {
     e.preventDefault();
     if (isSubmitting) return;
 
+    // Force one final, synchronous capture attempt right now, so we
+    // don't depend on the last interval tick having caught the token.
+    captureTrackingTokens();
+
     const form = e.currentTarget;
     const formData = new FormData(form);
 
@@ -92,8 +97,6 @@ export default function EligibilityForm() {
     }
     setInsuranceError(false);
 
-    // Backstop validation — even though inputs sanitize as you type,
-    // this catches anything pasted in or submitted via autofill.
     const phone = String(formData.get("phone") ?? "");
     const zip = String(formData.get("zip") ?? "");
     const state = String(formData.get("state") ?? "");
@@ -172,9 +175,9 @@ export default function EligibilityForm() {
 
       <form onSubmit={handleSubmit} className="p-6 space-y-3" noValidate>
         <input id="leadid_token" name="universal_leadid" type="hidden" defaultValue="" />
-<input id="Hidleadid" name="Hidleadid" type="hidden" defaultValue="" />
-<input id="hidTrusted" name="hidTrusted" type="hidden" defaultValue="" />
-<input id="xxTrustedFormToken_0" name="xxTrustedFormToken_0" type="hidden" defaultValue="" />
+        <input id="Hidleadid" name="Hidleadid" type="hidden" defaultValue="" />
+        <input id="hidTrusted" name="hidTrusted" type="hidden" defaultValue="" />
+        <input id="xxTrustedFormToken_0" name="xxTrustedFormToken_0" type="hidden" defaultValue="" />
 
         <div className="grid grid-cols-2 gap-3">
           <InputField icon={<User className="w-4 h-4" />} name="firstName" placeholder="First Name*" required />
@@ -192,7 +195,7 @@ export default function EligibilityForm() {
           required
         />
 
-        <InputField icon={<Mail className="w-4 h-4" />} name="email" placeholder="Email Address*" type="email"  />
+        <InputField icon={<Mail className="w-4 h-4" />} name="email" placeholder="Email Address*" type="email" />
 
         <InputField icon={<Home className="w-4 h-4" />} name="address" placeholder="Street Address*" required />
 
