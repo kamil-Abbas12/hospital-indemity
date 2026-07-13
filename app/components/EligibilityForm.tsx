@@ -9,21 +9,28 @@ export default function EligibilityForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const updateFields = () => {
-      const leadidToken = document.querySelector<HTMLInputElement>("#leadid_token, input[name='universal_leadid']");
-      const hidLeadid = document.getElementById("Hidleadid") as HTMLInputElement | null;
-      const hidTrusted = document.getElementById("hidTrusted") as HTMLInputElement | null;
-      const trustedToken = document.querySelector<HTMLInputElement>(
-        "#xxTrustedFormToken_0, #xxTrustedFormCertUrl, input[name='xxTrustedFormToken_0'], input[name='xxTrustedFormCertUrl']"
-      );
+   const updateFields = () => {
+  const leadidToken = document.querySelector<HTMLInputElement>(
+    "#leadid_token, input[name='universal_leadid']"
+  );
+  const hidLeadid = document.getElementById("Hidleadid") as HTMLInputElement | null;
+  const hidTrusted = document.getElementById("hidTrusted") as HTMLInputElement | null;
 
-      if (leadidToken && hidLeadid && leadidToken.value) {
-        hidLeadid.value = leadidToken.value;
-      }
-      if (trustedToken && hidTrusted && trustedToken.value) {
-        hidTrusted.value = trustedToken.value;
-      }
-    };
+  // TrustedForm actually creates a hidden input named "xxTrustedFormCertUrl_0"
+  // (with a numeric suffix) — the previous selector list didn't include this
+  // exact pattern, so it always returned null. Using a wildcard attribute
+  // selector here so it matches regardless of the suffix number.
+  const trustedToken = document.querySelector<HTMLInputElement>(
+    "input[name^='xxTrustedFormCertUrl'], input[id^='xxTrustedFormCertUrl']"
+  );
+
+  if (leadidToken && hidLeadid && leadidToken.value) {
+    hidLeadid.value = leadidToken.value;
+  }
+  if (trustedToken && hidTrusted && trustedToken.value) {
+    hidTrusted.value = trustedToken.value;
+  }
+};
 
     const polling = window.setInterval(updateFields, 5000);
     updateFields();
