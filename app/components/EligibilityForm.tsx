@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Phone, Mail, MapPin, Calendar, Clock, Lock } from "lucide-react";
+import { User, Phone, Mail, MapPin, Home, Building2, Calendar, Clock, Lock } from "lucide-react";
 
 export default function EligibilityForm() {
   const [hasInsurance, setHasInsurance] = useState<"yes" | "no" | null>(null);
+  const [insuranceError, setInsuranceError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const updateFields = () => {
@@ -62,25 +64,40 @@ export default function EligibilityForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSubmitting) return; // guard against rapid double-clicks
+
     const form = e.currentTarget;
     const formData = new FormData(form);
+
+    // hasInsurance is a custom button toggle, not a native input,
+    // so HTML's `required` can't validate it — check manually.
+    if (!hasInsurance) {
+      setInsuranceError(true);
+      return;
+    }
+    setInsuranceError(false);
+    setIsSubmitting(true);
+
+    // Jornaya (LeadiD) and TrustedForm tokens are captured into these
+    // hidden fields by the polling effect above — read their live values
+    // at submit time instead of hardcoding blanks.
+    const hidLeadid = form.querySelector<HTMLInputElement>("#Hidleadid");
+    const hidTrusted = form.querySelector<HTMLInputElement>("#hidTrusted");
 
     const payload = {
       firstName: formData.get("firstName"),
       lastName: formData.get("lastName"),
       phone: formData.get("phone"),
       email: formData.get("email"),
+      address: formData.get("address"),
+      city: formData.get("city"),
+      state: formData.get("state"),
       zip: formData.get("zip"),
       dob: formData.get("dob"),
       hasInsurance: hasInsurance,
       preferredTime: formData.get("preferredTime"),
-      // These three aren't collected by the UI yet — leave blank
-      // unless/until Jornaya (LeadiD) + TrustedForm scripts are added
-      address: "",
-      city: "",
-      state: "",
-      jornayaId: "",
-      trustedFormUrl: "",
+      jornayaId: hidLeadid?.value ?? "",
+      trustedFormUrl: hidTrusted?.value ?? "",
     };
 
     try {
@@ -95,12 +112,15 @@ export default function EligibilityForm() {
       if (result.success) {
         alert("Thank you! We'll be in touch shortly.");
         form.reset();
+        setHasInsurance(null);
       } else {
         alert("Something went wrong. Please try again or call us directly.");
       }
     } catch (err) {
       console.error("Submission error:", err);
       alert("Something went wrong. Please try again or call us directly.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -130,27 +150,37 @@ export default function EligibilityForm() {
         </div>
 
         <InputField icon={<Phone className="w-4 h-4" />} name="phone" placeholder="Phone Number*" type="tel" required />
-        <InputField icon={<Mail className="w-4 h-4" />} name="email" placeholder="Email Address (Optional)" type="email" />
+        <InputField icon={<Mail className="w-4 h-4" />} name="email" placeholder="Email Address*" type="email" required />
+
+        <InputField icon={<Home className="w-4 h-4" />} name="address" placeholder="Street Address*" required />
+
+        <div className="grid grid-cols-2 gap-3">
+          <InputField icon={<Building2 className="w-4 h-4" />} name="city" placeholder="City*" required />
+          <InputField icon={<MapPin className="w-4 h-4" />} name="state" placeholder="State*" required />
+        </div>
+
         <InputField icon={<MapPin className="w-4 h-4" />} name="zip" placeholder="ZIP Code*" required />
         <InputField
           icon={<Calendar className="w-4 h-4" />}
           name="dob"
           placeholder="Date of Birth*"
-          type="text"
-          onFocus={(e) => (e.target.type = "date")}
+          type="date"
           required
         />
 
         <div>
           <p className="text-sm text-navy font-medium mb-2">
-            Do you currently have health insurance?
+            Do you currently have health insurance?*
           </p>
           <div className="flex gap-3">
             {(["yes", "no"] as const).map((val) => (
               <button
                 type="button"
                 key={val}
-                onClick={() => setHasInsurance(val)}
+                onClick={() => {
+                  setHasInsurance(val);
+                  setInsuranceError(false);
+                }}
                 className={`flex-1 flex items-center justify-between px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
                   hasInsurance === val
                     ? "border-teal bg-teal/5 text-navy"
@@ -166,17 +196,23 @@ export default function EligibilityForm() {
               </button>
             ))}
           </div>
+          {insuranceError && (
+            <p className="text-red-600 text-xs mt-1.5">
+              Please let us know if you currently have health insurance.
+            </p>
+          )}
         </div>
 
         <div className="relative">
           <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <select
             name="preferredTime"
+            required
             defaultValue=""
             className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-teal/40"
           >
             <option value="" disabled>
-              Preferred Time to Receive a Call
+              Preferred Time to Receive a Call*
             </option>
             <option value="Morning (8am - 12pm)">Morning (8am - 12pm)</option>
             <option value="Afternoon (12pm - 4pm)">Afternoon (12pm - 4pm)</option>
@@ -187,9 +223,16 @@ export default function EligibilityForm() {
         <button
           id="btnSubmit"
           type="submit"
-          className="w-full bg-gold hover:bg-gold-light transition-colors text-navy font-bold py-3 rounded-lg flex items-center justify-center gap-2"
+          disabled={isSubmitting}
+          className="w-full bg-gold hover:bg-gold-light disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-navy font-bold py-3 rounded-lg flex items-center justify-center gap-2"
         >
-          CHECK MY ELIGIBILITY <span aria-hidden>&rarr;</span>
+          {isSubmitting ? (
+            "Submitting..."
+          ) : (
+            <>
+              CHECK MY ELIGIBILITY <span aria-hidden>&rarr;</span>
+            </>
+          )}
         </button>
 
         <p className="flex items-center justify-center gap-1.5 text-xs text-gray-500 pt-1">
