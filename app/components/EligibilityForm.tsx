@@ -60,49 +60,49 @@ export default function EligibilityForm() {
     return () => window.clearInterval(polling);
   }, []);
 
- const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  const form = e.currentTarget;
-  const formData = new FormData(form);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
 
-  const payload = {
-    firstName: formData.get("firstName"),
-    lastName: formData.get("lastName"),
-    phone: formData.get("phone"),
-    email: formData.get("email"),
-    zip: formData.get("zip"),
-    dob: formData.get("dob"),
-    hasInsurance: hasInsurance,
-    preferredTime: formData.get("preferredTime"),
-    // These three aren't collected by the UI yet — leave blank
-    // unless/until Jornaya (LeadiD) + TrustedForm scripts are added
-    address: "",
-    city: "",
-    state: "",
-    jornayaId: "",
-    trustedFormUrl: "",
-  };
+    const payload = {
+      firstName: formData.get("firstName"),
+      lastName: formData.get("lastName"),
+      phone: formData.get("phone"),
+      email: formData.get("email"),
+      zip: formData.get("zip"),
+      dob: formData.get("dob"),
+      hasInsurance: hasInsurance,
+      preferredTime: formData.get("preferredTime"),
+      // These three aren't collected by the UI yet — leave blank
+      // unless/until Jornaya (LeadiD) + TrustedForm scripts are added
+      address: "",
+      city: "",
+      state: "",
+      jornayaId: "",
+      trustedFormUrl: "",
+    };
 
-  try {
-    const res = await fetch("/api/submit-lead", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await fetch("/api/submit-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    const result = await res.json();
+      const result = await res.json();
 
-    if (result.success) {
-      alert("Thank you! We'll be in touch shortly.");
-      form.reset();
-    } else {
+      if (result.success) {
+        alert("Thank you! We'll be in touch shortly.");
+        form.reset();
+      } else {
+        alert("Something went wrong. Please try again or call us directly.");
+      }
+    } catch (err) {
+      console.error("Submission error:", err);
       alert("Something went wrong. Please try again or call us directly.");
     }
-  } catch (err) {
-    console.error("Submission error:", err);
-    alert("Something went wrong. Please try again or call us directly.");
-  }
-};
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100">
@@ -125,14 +125,21 @@ export default function EligibilityForm() {
         <input id="xxTrustedFormToken_0" name="xxTrustedFormToken_0" type="hidden" value="" />
 
         <div className="grid grid-cols-2 gap-3">
-          <InputField icon={<User className="w-4 h-4" />} placeholder="First Name*" required />
-          <InputField icon={<User className="w-4 h-4" />} placeholder="Last Name*" required />
+          <InputField icon={<User className="w-4 h-4" />} name="firstName" placeholder="First Name*" required />
+          <InputField icon={<User className="w-4 h-4" />} name="lastName" placeholder="Last Name*" required />
         </div>
 
-        <InputField icon={<Phone className="w-4 h-4" />} placeholder="Phone Number*" type="tel" required />
-        <InputField icon={<Mail className="w-4 h-4" />} placeholder="Email Address (Optional)" type="email" />
-        <InputField icon={<MapPin className="w-4 h-4" />} placeholder="ZIP Code*" required />
-        <InputField icon={<Calendar className="w-4 h-4" />} placeholder="Date of Birth*" type="text" onFocus={(e) => (e.target.type = "date")} required />
+        <InputField icon={<Phone className="w-4 h-4" />} name="phone" placeholder="Phone Number*" type="tel" required />
+        <InputField icon={<Mail className="w-4 h-4" />} name="email" placeholder="Email Address (Optional)" type="email" />
+        <InputField icon={<MapPin className="w-4 h-4" />} name="zip" placeholder="ZIP Code*" required />
+        <InputField
+          icon={<Calendar className="w-4 h-4" />}
+          name="dob"
+          placeholder="Date of Birth*"
+          type="text"
+          onFocus={(e) => (e.target.type = "date")}
+          required
+        />
 
         <div>
           <p className="text-sm text-navy font-medium mb-2">
@@ -163,11 +170,17 @@ export default function EligibilityForm() {
 
         <div className="relative">
           <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <select className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-teal/40">
-            <option>Preferred Time to Receive a Call</option>
-            <option>Morning (8am - 12pm)</option>
-            <option>Afternoon (12pm - 4pm)</option>
-            <option>Evening (4pm - 8pm)</option>
+          <select
+            name="preferredTime"
+            defaultValue=""
+            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-teal/40"
+          >
+            <option value="" disabled>
+              Preferred Time to Receive a Call
+            </option>
+            <option value="Morning (8am - 12pm)">Morning (8am - 12pm)</option>
+            <option value="Afternoon (12pm - 4pm)">Afternoon (12pm - 4pm)</option>
+            <option value="Evening (4pm - 8pm)">Evening (4pm - 8pm)</option>
           </select>
         </div>
 
@@ -190,12 +203,14 @@ export default function EligibilityForm() {
 
 function InputField({
   icon,
+  name,
   placeholder,
   type = "text",
   required = false,
   onFocus,
 }: {
   icon: React.ReactNode;
+  name: string;
   placeholder: string;
   type?: string;
   required?: boolean;
@@ -207,6 +222,7 @@ function InputField({
         {icon}
       </span>
       <input
+        name={name}
         type={type}
         required={required}
         placeholder={placeholder}
