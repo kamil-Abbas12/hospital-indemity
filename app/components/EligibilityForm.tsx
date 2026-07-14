@@ -48,6 +48,13 @@ export default function EligibilityForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [jornayaReady, setJornayaReady] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
+
+  // canSubmit = true once we have a real token, OR once we've waited
+  // long enough that we assume it's genuinely unavailable (blocked,
+  // slow network, etc.) and let the person through anyway rather than
+  // trapping them on a form they can never submit.
+  const canSubmit = jornayaReady || timedOut;
 
   useEffect(() => {
     const poll = () => {
@@ -56,7 +63,11 @@ export default function EligibilityForm() {
     };
 
     poll(); // check immediately on mount
-    const polling = window.setInterval(poll, 1000); // check every 1s until ready
+    const polling = window.setInterval(poll, 500); // fast poll
+
+    const timeout = window.setTimeout(() => {
+      setTimedOut(true);
+    }, 10000); // unlock the form after 10s even if Jornaya never responds
 
     const trustedFormField = "xxTrustedFormCertUrl";
     const provideReferrer = false;
@@ -89,7 +100,10 @@ export default function EligibilityForm() {
       document.body.appendChild(leadidScript);
     }
 
-    return () => window.clearInterval(polling);
+    return () => {
+      window.clearInterval(polling);
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -97,13 +111,15 @@ export default function EligibilityForm() {
     if (isSubmitting) return;
 
     // Final safety check — capture right now in case state hasn't
-    // re-rendered yet, and block if Jornaya still isn't ready.
+    // re-rendered yet. Don't block on this if we've already timed out;
+    // that path exists specifically so no one gets stuck forever.
     const readyNow = captureTrackingTokens();
-    if (!jornayaReady && !readyNow) {
+    if (readyNow) setJornayaReady(true);
+
+    if (!canSubmit && !readyNow) {
       setFormError("Still verifying your session — please wait a moment and try again.");
       return;
     }
-    if (readyNow) setJornayaReady(true);
 
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -151,6 +167,12 @@ export default function EligibilityForm() {
       jornayaId: hidLeadid?.value ?? "",
       trustedFormUrl: hidTrusted?.value ?? "",
     };
+
+    // Log so you can see the real-world miss rate later (check server
+    // logs / your own analytics) rather than guessing.
+    if (!payload.jornayaId) {
+      console.warn("Lead submitted without a Jornaya ID (timed out or blocked)");
+    }
 
     try {
       const res = await fetch("/api/submit-lead", {
@@ -305,12 +327,12 @@ export default function EligibilityForm() {
         <button
           id="btnSubmit"
           type="submit"
-          disabled={isSubmitting || !jornayaReady}
+          disabled={isSubmitting || !canSubmit}
           className="w-full bg-gold hover:bg-gold-light disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-navy font-bold py-3 rounded-lg flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
             "Submitting..."
-          ) : !jornayaReady ? (
+          ) : !canSubmit ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" /> Preparing form...
             </>
@@ -321,7 +343,7 @@ export default function EligibilityForm() {
           )}
         </button>
 
-        {!jornayaReady && !isSubmitting && (
+        {!canSubmit && (
           <p className="text-center text-xs text-gray-400">
             This usually only takes a second or two.
           </p>
