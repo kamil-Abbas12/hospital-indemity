@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Phone, Mail, MapPin, Home, Building2, Calendar, Clock, Lock } from "lucide-react";
+import { User, Phone, Mail, MapPin, Home, Building2, Calendar, Clock, Lock, Loader2 } from "lucide-react";
 
 // Strips non-digit characters and caps length — used for Phone and Zip
 function sanitizeDigits(e: React.FormEvent<HTMLInputElement>, maxLen: number) {
@@ -17,8 +17,9 @@ function sanitizeState(e: React.FormEvent<HTMLInputElement>) {
 
 // Pulled out of useEffect so handleSubmit can call it directly too —
 // this guarantees the freshest possible token capture at submit time,
-// instead of depending on the last 5-second poll having caught it.
-function captureTrackingTokens() {
+// instead of depending on the last interval tick having caught it.
+// Returns true if a Jornaya token was successfully captured this call.
+function captureTrackingTokens(): boolean {
   const leadidToken = document.querySelector<HTMLInputElement>(
     "#leadid_token, input[name='universal_leadid']"
   );
@@ -28,12 +29,17 @@ function captureTrackingTokens() {
     "input[name^='xxTrustedFormCertUrl'], input[id^='xxTrustedFormCertUrl']"
   );
 
+  let jornayaReady = false;
+
   if (leadidToken && hidLeadid && leadidToken.value) {
     hidLeadid.value = leadidToken.value;
+    jornayaReady = true;
   }
   if (trustedToken && hidTrusted && trustedToken.value) {
     hidTrusted.value = trustedToken.value;
   }
+
+  return jornayaReady;
 }
 
 export default function EligibilityForm() {
@@ -41,10 +47,16 @@ export default function EligibilityForm() {
   const [insuranceError, setInsuranceError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [jornayaReady, setJornayaReady] = useState(false);
 
   useEffect(() => {
-    const polling = window.setInterval(captureTrackingTokens, 2000); // tightened from 5000ms
-    captureTrackingTokens();
+    const poll = () => {
+      const ready = captureTrackingTokens();
+      if (ready) setJornayaReady(true);
+    };
+
+    poll(); // check immediately on mount
+    const polling = window.setInterval(poll, 1000); // check every 1s until ready
 
     const trustedFormField = "xxTrustedFormCertUrl";
     const provideReferrer = false;
@@ -84,9 +96,14 @@ export default function EligibilityForm() {
     e.preventDefault();
     if (isSubmitting) return;
 
-    // Force one final, synchronous capture attempt right now, so we
-    // don't depend on the last interval tick having caught the token.
-    captureTrackingTokens();
+    // Final safety check — capture right now in case state hasn't
+    // re-rendered yet, and block if Jornaya still isn't ready.
+    const readyNow = captureTrackingTokens();
+    if (!jornayaReady && !readyNow) {
+      setFormError("Still verifying your session — please wait a moment and try again.");
+      return;
+    }
+    if (readyNow) setJornayaReady(true);
 
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -288,17 +305,27 @@ export default function EligibilityForm() {
         <button
           id="btnSubmit"
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !jornayaReady}
           className="w-full bg-gold hover:bg-gold-light disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-navy font-bold py-3 rounded-lg flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
             "Submitting..."
+          ) : !jornayaReady ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" /> Preparing form...
+            </>
           ) : (
             <>
               CHECK MY ELIGIBILITY <span aria-hidden>&rarr;</span>
             </>
           )}
         </button>
+
+        {!jornayaReady && !isSubmitting && (
+          <p className="text-center text-xs text-gray-400">
+            This usually only takes a second or two.
+          </p>
+        )}
 
         <p className="flex items-center justify-center gap-1.5 text-xs text-gray-500 pt-1">
           <Lock className="w-3.5 h-3.5" /> Your information is safe and secure.
