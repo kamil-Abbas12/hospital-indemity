@@ -16,8 +16,7 @@ function sanitizeState(e: React.FormEvent<HTMLInputElement>) {
 }
 
 // Pulled out of useEffect so handleSubmit can call it directly too —
-// this guarantees the freshest possible token capture at submit time,
-// instead of depending on the last interval tick having caught it.
+// this guarantees the freshest possible token capture at submit time.
 // Returns true if a Jornaya token was successfully captured this call.
 function captureTrackingTokens(): boolean {
   const leadidToken = document.querySelector<HTMLInputElement>(
@@ -48,13 +47,6 @@ export default function EligibilityForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [jornayaReady, setJornayaReady] = useState(false);
-  const [timedOut, setTimedOut] = useState(false);
-
-  // canSubmit = true once we have a real token, OR once we've waited
-  // long enough that we assume it's genuinely unavailable (blocked,
-  // slow network, etc.) and let the person through anyway rather than
-  // trapping them on a form they can never submit.
-  const canSubmit = jornayaReady || timedOut;
 
   useEffect(() => {
     const poll = () => {
@@ -63,11 +55,7 @@ export default function EligibilityForm() {
     };
 
     poll(); // check immediately on mount
-    const polling = window.setInterval(poll, 500); // fast poll
-
-    const timeout = window.setTimeout(() => {
-      setTimedOut(true);
-    }, 10000); // unlock the form after 10s even if Jornaya never responds
+    const polling = window.setInterval(poll, 500); // fast poll, no timeout bypass
 
     const trustedFormField = "xxTrustedFormCertUrl";
     const provideReferrer = false;
@@ -102,7 +90,6 @@ export default function EligibilityForm() {
 
     return () => {
       window.clearInterval(polling);
-      window.clearTimeout(timeout);
     };
   }, []);
 
@@ -111,15 +98,14 @@ export default function EligibilityForm() {
     if (isSubmitting) return;
 
     // Final safety check — capture right now in case state hasn't
-    // re-rendered yet. Don't block on this if we've already timed out;
-    // that path exists specifically so no one gets stuck forever.
+    // re-rendered yet. Strictly block if no real token exists yet —
+    // no fallback bypass.
     const readyNow = captureTrackingTokens();
-    if (readyNow) setJornayaReady(true);
-
-    if (!canSubmit && !readyNow) {
-      setFormError("Still verifying your session — please wait a moment and try again.");
+    if (!jornayaReady && !readyNow) {
+      setFormError("Still verifying your session — please wait a moment.");
       return;
     }
+    if (readyNow) setJornayaReady(true);
 
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -167,12 +153,6 @@ export default function EligibilityForm() {
       jornayaId: hidLeadid?.value ?? "",
       trustedFormUrl: hidTrusted?.value ?? "",
     };
-
-    // Log so you can see the real-world miss rate later (check server
-    // logs / your own analytics) rather than guessing.
-    if (!payload.jornayaId) {
-      console.warn("Lead submitted without a Jornaya ID (timed out or blocked)");
-    }
 
     try {
       const res = await fetch("/api/submit-lead", {
@@ -327,12 +307,12 @@ export default function EligibilityForm() {
         <button
           id="btnSubmit"
           type="submit"
-          disabled={isSubmitting || !canSubmit}
+          disabled={isSubmitting || !jornayaReady}
           className="w-full bg-gold hover:bg-gold-light disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-navy font-bold py-3 rounded-lg flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
             "Submitting..."
-          ) : !canSubmit ? (
+          ) : !jornayaReady ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" /> Preparing form...
             </>
@@ -343,9 +323,9 @@ export default function EligibilityForm() {
           )}
         </button>
 
-        {!canSubmit && (
+        {!jornayaReady && !isSubmitting && (
           <p className="text-center text-xs text-gray-400">
-            This usually only takes a second or two.
+            Verifying your session — this usually only takes a second or two.
           </p>
         )}
 

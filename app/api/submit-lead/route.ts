@@ -8,9 +8,7 @@ const ENTRY_IDS = {
   firstName: "entry.1862210803",
   lastName: "entry.1549380775",
   address: "entry.219003485",
-  // Swapped based on observed sheet output: values sent as "city" were
-  // landing in the sheet's State column, and vice versa. If the live
-  // form's questions get rebuilt again, re-verify via view-source.
+
   city: "entry.297900501",
   state: "entry.110340468",
   zip: "entry.1795686712",
