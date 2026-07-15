@@ -25,7 +25,34 @@ const ENTRY_IDS = {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+   const phone = String(body.phone ?? "");
+    const zip = String(body.zip ?? "");
+    const state = String(body.state ?? "");
+    const jornayaId = String(body.jornayaId ?? "");
+    const trustedFormUrl = String(body.trustedFormUrl ?? "");
 
+    if (!/^\d{10}$/.test(phone)) {
+      return NextResponse.json({ success: false, error: "Invalid phone" }, { status: 400 });
+    }
+    if (!/^\d{5}$/.test(zip)) {
+      return NextResponse.json({ success: false, error: "Invalid zip" }, { status: 400 });
+    }
+    if (!/^[A-Z]{2}$/.test(state)) {
+      return NextResponse.json({ success: false, error: "Invalid state" }, { status: 400 });
+    }
+    if (!jornayaId || jornayaId.length < 10) {
+      return NextResponse.json({ success: false, error: "Missing Jornaya token" }, { status: 400 });
+    }
+    if (!/^https:\/\/cert\.trustedform\.com\//.test(trustedFormUrl)) {
+      return NextResponse.json({ success: false, error: "Missing TrustedForm cert" }, { status: 400 });
+    }
+
+    // sanity-check DOB isn't in the future / isn't absurd
+    const dob = new Date(String(body.dob ?? ""));
+    const now = new Date();
+    if (isNaN(dob.getTime()) || dob > now || now.getFullYear() - dob.getFullYear() > 120) {
+      return NextResponse.json({ success: false, error: "Invalid DOB" }, { status: 400 });
+    }
     // Capture real client IP from headers (Vercel/Coolify both set x-forwarded-for)
     const forwardedFor = req.headers.get("x-forwarded-for");
     const ipAddress = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
