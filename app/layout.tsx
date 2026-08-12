@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 
@@ -60,7 +61,7 @@ const orgSchema = {
   name: "Hospital Indemnity Insurance",
   description:
     "Lead generation service connecting consumers with licensed agents offering Hospital Indemnity Insurance plans.",
-  url: "https://hospitalindemnity.com",
+  url: "https://hospitalindemnity.topdpglead.com",
   areaServed: "US",
   priceRange: "$$",
 };
@@ -76,6 +77,11 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
+        />
+        <Script
+          src="https://analytics.ahrefs.com/analytics.js"
+          data-key="JkhARxLMNh+CptEmB0KYzw"
+          strategy="afterInteractive"
         />
       </head>
       <body className={`${fraunces.variable} ${inter.variable} font-body antialiased`}>
