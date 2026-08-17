@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, Phone, Mail, MapPin, Home, Building2, Calendar, Clock, Lock, Loader2 } from "lucide-react";
+import { Phone, MapPin, PhoneCall, Lock, Loader2 } from "lucide-react";
 
-// Strips non-digit characters and caps length — used for Phone and Zip
+// Strips non-digit characters and caps length — used for Caller ID and Zip
 function sanitizeDigits(e: React.FormEvent<HTMLInputElement>, maxLen: number) {
   const target = e.target as HTMLInputElement;
   target.value = target.value.replace(/\D/g, "").slice(0, maxLen);
@@ -41,11 +41,18 @@ function captureTrackingTokens(): boolean {
   return jornayaReady;
 }
 
+type SubmitResult = {
+  success: boolean;
+  error?: string;
+  bidAmount?: number;
+  dialNumber?: string | null;
+};
+
 export default function EligibilityForm() {
-  const [hasInsurance, setHasInsurance] = useState<"yes" | "no" | null>(null);
-  const [insuranceError, setInsuranceError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
+  const [result, setResult] = useState<SubmitResult | null>(null);
+  const [exposeCallerId, setExposeCallerId] = useState(true);
   const [jornayaReady, setJornayaReady] = useState(false);
 
   useEffect(() => {
@@ -110,46 +117,35 @@ export default function EligibilityForm() {
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    if (!hasInsurance) {
-      setInsuranceError(true);
+    const callerId = String(formData.get("callerId") ?? "");
+    const state = String(formData.get("state") ?? "");
+    const zip = String(formData.get("zip") ?? "");
+
+    if (!/^\d{10}$/.test(callerId)) {
+      setFormError("Caller ID must be exactly 10 digits.");
       return;
     }
-    setInsuranceError(false);
-
-    const phone = String(formData.get("phone") ?? "");
-    const zip = String(formData.get("zip") ?? "");
-    const state = String(formData.get("state") ?? "");
-
-    if (!/^\d{10}$/.test(phone)) {
-      setFormError("Phone number must be exactly 10 digits.");
+    if (!/^[A-Z]{2}$/.test(state)) {
+      setFormError("State must be a 2-letter abbreviation (e.g. TX, NY).");
       return;
     }
     if (!/^\d{5}$/.test(zip)) {
       setFormError("ZIP code must be exactly 5 digits.");
       return;
     }
-    if (!/^[A-Z]{2}$/.test(state)) {
-      setFormError("State must be a 2-letter abbreviation (e.g. NY, CA).");
-      return;
-    }
+
     setFormError("");
+    setResult(null);
     setIsSubmitting(true);
 
     const hidLeadid = form.querySelector<HTMLInputElement>("#Hidleadid");
     const hidTrusted = form.querySelector<HTMLInputElement>("#hidTrusted");
 
     const payload = {
-      firstName: formData.get("firstName"),
-      lastName: formData.get("lastName"),
-      phone,
-      email: formData.get("email"),
-      address: formData.get("address"),
-      city: formData.get("city"),
+      callerId,
       state,
       zip,
-      dob: formData.get("dob"),
-      hasInsurance: hasInsurance,
-      preferredTime: formData.get("preferredTime"),
+      exposeCallerId,
       jornayaId: hidLeadid?.value ?? "",
       trustedFormUrl: hidTrusted?.value ?? "",
     };
@@ -161,18 +157,15 @@ export default function EligibilityForm() {
         body: JSON.stringify(payload),
       });
 
-      const result = await res.json();
+      const data: SubmitResult = await res.json();
+      setResult(data);
 
-      if (result.success) {
-        alert("Thank you! We'll be in touch shortly.");
-        form.reset();
-        setHasInsurance(null);
-      } else {
-        alert("Something went wrong. Please try again or call us directly.");
+      if (!data.success) {
+        setFormError(data.error || "No match found for this call.");
       }
     } catch (err) {
       console.error("Submission error:", err);
-      alert("Something went wrong. Please try again or call us directly.");
+      setFormError("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -182,13 +175,13 @@ export default function EligibilityForm() {
     <div className="bg-white rounded-xl shadow-xl overflow-hidden border border-gray-100">
       <div className="bg-navy px-6 py-5">
         <p className="font-display text-white text-xl sm:text-2xl font-semibold">
-          Get Your Free
+          Connect a
         </p>
         <p className="font-display text-gold text-xl sm:text-2xl font-bold">
-          Eligibility Check
+          Call
         </p>
         <p className="text-gray-300 text-sm mt-1">
-          See if you qualify for affordable Hospital Indemnity Insurance.
+          Enter caller details to find a live buyer and connect the call.
         </p>
       </div>
 
@@ -198,15 +191,10 @@ export default function EligibilityForm() {
         <input id="hidTrusted" name="hidTrusted" type="hidden" defaultValue="" />
         <input id="xxTrustedFormToken_0" name="xxTrustedFormToken_0" type="hidden" defaultValue="" />
 
-        <div className="grid grid-cols-2 gap-3">
-          <InputField icon={<User className="w-4 h-4" />} name="firstName" placeholder="First Name*" required />
-          <InputField icon={<User className="w-4 h-4" />} name="lastName" placeholder="Last Name*" required />
-        </div>
-
         <InputField
           icon={<Phone className="w-4 h-4" />}
-          name="phone"
-          placeholder="Phone Number* (10 digits)"
+          name="callerId"
+          placeholder="Caller ID* (10 digits)"
           type="tel"
           inputMode="numeric"
           maxLength={10}
@@ -214,95 +202,37 @@ export default function EligibilityForm() {
           required
         />
 
-        <InputField icon={<Mail className="w-4 h-4" />} name="email" placeholder="Email Address*" type="email" />
-
-        <InputField icon={<Home className="w-4 h-4" />} name="address" placeholder="Street Address*" required />
-
         <div className="grid grid-cols-2 gap-3">
-          <InputField icon={<Building2 className="w-4 h-4" />} name="city" placeholder="City*" required />
           <InputField
             icon={<MapPin className="w-4 h-4" />}
             name="state"
-            placeholder="State* (e.g. NY)"
+            placeholder="State* (e.g. TX)"
             maxLength={2}
             onInput={sanitizeState}
             required
           />
-        </div>
-
-        <InputField
-          icon={<MapPin className="w-4 h-4" />}
-          name="zip"
-          placeholder="ZIP Code* (5 digits)"
-          inputMode="numeric"
-          maxLength={5}
-          onInput={(e) => sanitizeDigits(e, 5)}
-          required
-        />
-
-        <InputField
-          icon={<Calendar className="w-4 h-4" />}
-          name="dob"
-          placeholder="Date of Birth*"
-          type="date"
-          required
-        />
-
-        <div>
-          <p className="text-sm text-navy font-medium mb-2">
-            Do you currently have health insurance?*
-          </p>
-          <div className="flex gap-3">
-            {(["yes", "no"] as const).map((val) => (
-              <button
-                type="button"
-                key={val}
-                onClick={() => {
-                  setHasInsurance(val);
-                  setInsuranceError(false);
-                }}
-                className={`flex-1 flex items-center justify-between px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
-                  hasInsurance === val
-                    ? "border-teal bg-teal/5 text-navy"
-                    : "border-gray-300 text-gray-600"
-                }`}
-              >
-                {val === "yes" ? "Yes" : "No"}
-                <span
-                  className={`w-3.5 h-3.5 rounded-full border ${
-                    hasInsurance === val ? "border-teal bg-teal" : "border-gray-300"
-                  }`}
-                />
-              </button>
-            ))}
-          </div>
-          {insuranceError && (
-            <p className="text-red-600 text-xs mt-1.5">
-              Please let us know if you currently have health insurance.
-            </p>
-          )}
-        </div>
-
-        <div className="relative">
-          <Clock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <select
-            name="preferredTime"
+          <InputField
+            icon={<MapPin className="w-4 h-4" />}
+            name="zip"
+            placeholder="ZIP Code* (5 digits)"
+            inputMode="numeric"
+            maxLength={5}
+            onInput={(e) => sanitizeDigits(e, 5)}
             required
-            defaultValue=""
-            className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-gray-300 text-sm text-gray-600 appearance-none focus:outline-none focus:ring-2 focus:ring-teal/40"
-          >
-            <option value="" disabled>
-              Preferred Time to Receive a Call*
-            </option>
-            <option value="Morning (8am - 12pm)">Morning (8am - 12pm)</option>
-            <option value="Afternoon (12pm - 4pm)">Afternoon (12pm - 4pm)</option>
-            <option value="Evening (4pm - 8pm)">Evening (4pm - 8pm)</option>
-          </select>
+          />
         </div>
 
-        {formError && (
-          <p className="text-red-600 text-xs -mt-1">{formError}</p>
-        )}
+        <label className="flex items-center gap-2 text-sm text-navy font-medium">
+          <input
+            type="checkbox"
+            checked={exposeCallerId}
+            onChange={(e) => setExposeCallerId(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-teal focus:ring-teal/40"
+          />
+          Expose Caller ID
+        </label>
+
+        {formError && <p className="text-red-600 text-xs -mt-1">{formError}</p>}
 
         <button
           id="btnSubmit"
@@ -311,21 +241,40 @@ export default function EligibilityForm() {
           className="w-full bg-gold hover:bg-gold-light disabled:opacity-60 disabled:cursor-not-allowed transition-colors text-navy font-bold py-3 rounded-lg flex items-center justify-center gap-2"
         >
           {isSubmitting ? (
-            "Submitting..."
+            "Finding a buyer..."
           ) : !jornayaReady ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" /> Preparing form...
             </>
           ) : (
-            <>
-              CHECK MY ELIGIBILITY <span aria-hidden>&rarr;</span>
-            </>
+            "FIND A BUYER"
           )}
         </button>
 
         {!jornayaReady && !isSubmitting && (
           <p className="text-center text-xs text-gray-400">
             Verifying your session — this usually only takes a second or two.
+          </p>
+        )}
+
+        {result?.success && (
+          <a
+            href={result.dialNumber ? `tel:${result.dialNumber}` : undefined}
+            aria-disabled={!result.dialNumber}
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-bold transition-colors ${
+              result.dialNumber
+                ? "bg-teal hover:bg-teal/90 text-white"
+                : "bg-gray-200 text-gray-400 pointer-events-none"
+            }`}
+          >
+            <PhoneCall className="w-4 h-4" />
+            {result.dialNumber ? `Connect Call (${result.dialNumber})` : "No dial number returned"}
+          </a>
+        )}
+
+        {result?.success && typeof result.bidAmount === "number" && (
+          <p className="text-center text-xs text-gray-500">
+            Bid: ${result.bidAmount.toFixed(2)}
           </p>
         )}
 
