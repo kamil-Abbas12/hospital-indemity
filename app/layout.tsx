@@ -16,7 +16,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://hospitalindemnity.topdpglead.com"),
+  metadataBase: new URL("https://hospitalindemnity.topdoglead.com"),
   title: "Hospital Indemnity Insurance | Affordable Hospital Cash Benefit Plans",
   description:
     "Compare affordable Hospital Indemnity Insurance plans and get cash benefits paid directly to you when hospitalized. Free eligibility check, no obligation — licensed specialists standing by.",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   alternates: {
-    canonical: "https://hospitalindemnity.topdpglead.com",
+    canonical: "https://hospitalindemnity.topdoglead.com",
   },
 };
 
@@ -61,7 +61,7 @@ const orgSchema = {
   name: "Hospital Indemnity Insurance",
   description:
     "Lead generation service connecting consumers with licensed agents offering Hospital Indemnity Insurance plans.",
-  url: "https://hospitalindemnity.topdpglead.com",
+  url: "https://hospitalindemnity.topdoglead.com",
   areaServed: "US",
   priceRange: "$$",
 };
