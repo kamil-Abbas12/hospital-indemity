@@ -55,7 +55,7 @@ const sections = [
   },
   {
     title: "11. Contact Us",
-    body: `If you have questions about this Privacy Policy or how your information is handled, please contact us at support@yourdomain.com.`,
+    body: `If you have questions about this Privacy Policy or how your information is handled, please contact us at support@topdoglead.com.`,
   },
 ];
 

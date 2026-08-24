@@ -63,7 +63,7 @@ const sections = [
   },
   {
     title: "13. Contact Us",
-    body: `If you have questions about these Terms of Service, please contact us at support@yourdomain.com.`,
+    body: `If you have questions about these Terms of Service, please contact us at support@topdoglead.com.`,
   },
 ];
 
