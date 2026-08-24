@@ -29,11 +29,11 @@ export const metadata: Metadata = {
     "hospital stay insurance",
     "indemnity insurance quotes",
   ],
-  openGraph: {
+    openGraph: {
     title: "Hospital Indemnity Insurance | Affordable Hospital Cash Benefit Plans",
     description:
       "Get cash benefits when you're hospitalized. Check your eligibility for affordable Hospital Indemnity Insurance in minutes — 100% free, no obligation.",
-    url: "https://hospitalindemnity.topdpoglead.com",
+    url: "https://hospitalindemnity.topdoglead.com",
     siteName: "Top Dog Leads | Hospital Indemnity",
     images: ["/og-image.jpg"],
     locale: "en_US",
@@ -64,6 +64,14 @@ const orgSchema = {
   url: "https://hospitalindemnity.topdoglead.com",
   areaServed: "US",
   priceRange: "$$",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "454 S Cypress Rd",
+    addressLocality: "Pompano Beach",
+    addressRegion: "FL",
+    postalCode: "33060",
+    addressCountry: "US",
+  },
 };
 
 export default function RootLayout({
