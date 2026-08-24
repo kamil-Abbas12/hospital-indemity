@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     title: "Hospital Indemnity Insurance | Affordable Hospital Cash Benefit Plans",
     description:
       "Get cash benefits when you're hospitalized. Check your eligibility for affordable Hospital Indemnity Insurance in minutes — 100% free, no obligation.",
-    url: "https://hospitalindemnity.topdpglead.com",
+    url: "https://hospitalindemnity.topdpoglead.com",
     siteName: "Top Dog Leads | Hospital Indemnity",
     images: ["/og-image.jpg"],
     locale: "en_US",
