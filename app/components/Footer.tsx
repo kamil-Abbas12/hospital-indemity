@@ -44,7 +44,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-2 md:grid-cols-5 gap-10">
         
         <div className="col-span-2">
-          <a href="#" className="flex items-center gap-2.5 mb-4">
+<Link href="/" className="flex items-center gap-2.5 mb-4">
             <Image
               src="/logo.png"
               alt="TopDog Leads Hospital Indemnity CPA logo"
@@ -52,7 +52,7 @@ export default function Footer() {
               height={64}
               className="h-14 w-auto"
             />
-          </a>
+          </Link>
 
           <p className="text-sm leading-relaxed max-w-sm mb-5">
             Connecting you with licensed insurance specialists to find
@@ -62,11 +62,11 @@ export default function Footer() {
 
           <div className="space-y-2 text-sm">
             <a
-              href="mailto:support@yourdomain.com"
+              href="mailto:support@topdoglead.com.com"
               className="flex items-center gap-2 hover:text-white transition-colors"
             >
               <Mail className="w-4 h-4 text-gold" />
-              support@yourdomain.com
+              support@topdoglead.com.com
             </a>
 
             <p className="flex items-center gap-2">

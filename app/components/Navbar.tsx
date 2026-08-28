@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { PhoneCall, Menu, X, BadgeCheck } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 const links = [
   { label: "Benefits", href: "#why-consider", id: "why-consider" },
@@ -77,7 +78,7 @@ export default function Navbar() {
       <div className="bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2.5 shrink-0">
+<Link href="/" className="flex items-center gap-2.5 shrink-0">
             <Image
               src="/logo.png"
               alt="TopDog Leads Hospital Indemnity CPA logo"
@@ -86,7 +87,7 @@ export default function Navbar() {
               className="h-12 w-auto sm:h-14"
               priority
             />
-          </a>
+          </Link>
 
           {/* Desktop Menu */}
           <nav className="hidden lg:flex items-center gap-2">
