@@ -10,6 +10,15 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://hospitalindemnity.topdoglead.com/terms-of-service",
   },
+  openGraph: {
+    title: "Terms of Service | Hospital Indemnity Insurance",
+    description:
+      "Read the Terms of Service governing your use of the Hospital Indemnity Insurance website and eligibility form.",
+    url: "https://hospitalindemnity.topdoglead.com/terms-of-service",
+    siteName: "Top Dog Leads | Hospital Indemnity",
+    locale: "en_US",
+    type: "website",
+  },
 };
 
 const sections = [

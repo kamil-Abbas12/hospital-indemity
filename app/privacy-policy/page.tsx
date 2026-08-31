@@ -10,6 +10,15 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://hospitalindemnity.topdoglead.com/privacy-policy",
   },
+  openGraph: {
+    title: "Privacy Policy | Hospital Indemnity Insurance",
+    description:
+      "Read the Privacy Policy for Hospital Indemnity Insurance to learn how we collect, use, and protect your personal information.",
+    url: "https://hospitalindemnity.topdoglead.com/privacy-policy",
+    siteName: "Top Dog Leads | Hospital Indemnity",
+    locale: "en_US",
+    type: "website",
+  },
 };
 
 const sections = [

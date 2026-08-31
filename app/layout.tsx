@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://hospitalindemnity.topdoglead.com"),
   title: "Hospital Indemnity Insurance | Affordable Hospital Cash Benefit Plans",
   description:
-    "Compare affordable Hospital Indemnity Insurance plans and get cash benefits paid directly to you when hospitalized. Free eligibility check, no obligation — licensed specialists standing by.",
-  keywords: [
+    "Compare affordable Hospital Indemnity Insurance plans with cash benefits paid directly to you when hospitalized. Free eligibility check — no obligation.",
+      keywords: [
     "hospital indemnity insurance",
     "hospital indemnity plans",
     "affordable hospital insurance",
